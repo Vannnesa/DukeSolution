@@ -1,113 +1,97 @@
 # git-homework
 
-A local, offline reimplementation of the Duke "Programming Practice" `grade`
-tool, from the *Introductory C Programming* specialization on Coursera.
+杜克大学 Coursera 专项课程《Introductory C Programming》的本地评分工具的Bun+TypeScript复刻。
 
-Work through the assignments the way the course intended: get one, write it,
-run `grade`, and on a pass the next one appears.
+[English](README_en.md) | 中文
 
-```console
-$ grade init ~/duke-homework
-$ cd ~/duke-homework/00_hello
-$ bun grade
-```
+## 安装
 
-No daemon, no git push, no network.
-
----
-
-## How it works
-
-Two things that are deliberately kept apart:
-
-| | what it is | where |
-|---|---|---|
-| **package** | this checkout — a read-only *index* of configs, templates, reconstructed grader drivers and reference solutions | `data/` |
-| **workspace** | wherever you are doing the work | anywhere else |
-
-The original course did the same: `/git-homework` was the bare repository the
-grader read from, and your home directory was the workspace. Nothing is ever
-written into the package, so you can have many workspaces and the index stays
-pristine.
-
-## Install
-
-Requires [Bun](https://bun.sh).
+需要 [Bun](https://bun.sh) 和一个 C 编译器。(不能使用MSVC)
 
 ```bash
-git clone <this repo> ~/DukeSolution
-cd ~/DukeSolution
-bun install          # optional: only needed for typechecking and editor support
-grade install        # not yet available — see below
-```
-
-The last step cannot work yet, because `grade` does not exist until it has been
-installed. Run it through Bun the first time:
-
-```bash
+git clone https://github.com/Vannnesa/DukeSolution ~/DukeSolution
 cd ~/DukeSolution
 bun src/index.ts install
 ```
 
-That writes a small launcher into the first writable directory on your `PATH`
-(`~/.local/bin`, then Homebrew's `bin`, then `/usr/local/bin`). It reports
-exactly where it went, and if that directory is not on your `PATH` it prints the
-one line to add to your shell's rc file.
 
-`bun install` is genuinely optional: the tool has no runtime dependencies, so
-`bun src/index.ts` works in a fresh clone with no `node_modules` at all. Install
-it only if you want `bunx tsc --noEmit` to run.
+`bun src/index.ts install` 可以跳过。但是不能被安装到PATH中随处调用，只能在DukeSolution里运行`bun grade init path/to/your/dir`来初始化。
 
-## Use
-
-Two commands, from anywhere:
+## 使用
 
 ```console
 $ cd ~
 $ grade init
-You are in your home directory, so the workspace goes in ~/duke-homework instead.
-
 Workspace ready: /Users/you/duke-homework
+
 Your first assignment is 00_hello/:
   README
   hello.txt
 
 $ cd ~/duke-homework/00_hello
 $ grade
+Your file did not match the expected output
+Your file is 0 bytes; the expected file is 6 bytes
+Expected:
+hello
+
+Got:
+
+Overall Grade: FAILED
 ```
 
-`grade init` with no argument uses the current directory, except when that is
-your home directory — 42 assignment folders loose in `~` would be a mess, so it
-uses `~/duke-homework` and says so. Pass a directory to override:
+感谢同名的DukeSolution提供了完美作业案例，基于此，我给写出的代码与标准范例对比，自动生成diff.txt 并且生成下一个作业文件夹。
 
-```bash
-grade init ~/school/duke
+```
+Overall Grade: PASSED
+Your code is in answer/user_code/; the reference is in answer/reference/.
+Read answer/diff.txt to see how your solution differs.
+
+Your next assignment is ready: 01_apple/
 ```
 
-Once `grade` is on your `PATH`, the workspace also carries a `./grade` launcher,
-and `bun grade` works inside it too (the workspace gets its own `package.json`).
-All three are equivalent.
+`grade init` 默认在当前目录建工作区。如果你正好在~没传任何目录参数，它会生成一个 `~/duke-homework`文件夹，以防文件散落在~目录里。
 
-| command | what it does |
-|---|---|
-| `grade` | grade the assignment you are in, or the workspace's current one |
-| `grade init [dir]` | create a workspace and hand out the first assignment |
-| `grade status` | which assignments are done / current / locked |
-| `grade list` | every assignment and its strategy |
-| `grade new <id>` | copy one assignment into the workspace, untouched |
-| `grade check` | validate every config in the index |
-| `grade install` | put `grade` on your `PATH` |
-| `grade uninstall` | remove the launcher |
-| `grade doctor` | report anything that would stop grading working |
+### 命令
 
-`grade` works from the assignment directory, from the workspace root, or from
-any subdirectory of either — it walks up to find the workspace and falls back to
-the recorded current assignment.
+```
+grade                 给当前作业评分
+grade init [目录]     建工作区并发第一个作业
+grade status          哪些做完了、当前在哪、哪些还没解锁
+grade list            列出全部作业和各自的评分方式
+grade new <作业号>    把某个作业复制进工作区
+grade check           校验所有配置
+grade install         把 grade 装进 PATH
+grade uninstall       卸载
+grade doctor          检查运行需要的东西齐不齐
+```
 
-Useful flags: `--workspace <dir>`, `--id <id>`, `--dir <dir>`, `--explain`,
-`--quiet`, `--no-answer`, `--no-scaffold`.
+`grade` 在作业目录里、工作区根目录、或者它们下面任意一层子目录里都能跑。进度存在工作区的 `.grade/state.json`，`grade status` 读的就是它。
 
-If something is wrong, start here:
+### 通过和失败
+
+通过时会在作业目录里生成 `grade.txt`，建一个 `answer/` 文件夹（里面是你的代码、标准答案、以及两者的逐行对比），再把下一个作业放到旁边。
+
+失败时只写 `grade.txt`，里面指明哪个用例没过，把期望输出和你实际的输出并排显示。不会解锁任何东西。
+
+退出码：`0` 通过，`1` 失败，`3`:未知错误，`2`:用法或配置有问题。
+
+## 检查
+
+绝大多数作业会被编译、运行，然后把程序输出和预先存好的期望输出逐字节比对。你的源代码不参与比对，所以实现方式不同没关系，只要行为一致就能过。
+
+只有三个作业比对文件内容：`00_hello`、`01_apple`、`10_gdb`。它们要交的都是内容固定的数据文件，比对字节本来就是全部要求。
+
+有五个作业在这里评不了，会返回 `NOT GRADED`。它们要把学生写的代码跟一堆故意写错的程序做对比，而那些程序当年放在评分机的 `/usr/local/l2p` 目录里，没能保留下来。工具会直说，不会瞎猜。细节写在 `REVERSE_ENGINEERING.md`。
+
+## 跨平台兼容性
+
+支持macOS 和 Linux 。Windows 需要有一个兼容 gcc 的编译器，MSVC 的 `cl` 不行，因为作业是按 gcc 的参数写的。
+
+内存检查类的作业跑在 AddressSanitizer 上。Linux 上还会跑 valgrind，那是原版课程用的工具。macOS 上既没有 valgrind 也没有 LeakSanitizer，所以工具改用苹果的 `leaks` 做检查
+
+
+出问题先跑这个：
 
 ```console
 $ grade doctor
@@ -119,158 +103,33 @@ $ grade doctor
   ok    line endings     .gitattributes present (no EOL conversion)
 ```
 
-### What a pass gives you
-
-1. `grade.txt` in the assignment directory.
-2. `answer/user_code/` — your files.
-3. `answer/reference/` — the reference solution.
-4. `answer/diff.txt` — a unified diff of the two (`-` is the reference).
-5. The next assignment, copied from `data/templates/`.
-
-A failure writes only `grade.txt`, naming the failing case with
-`Expected:` / `Got:` side by side.
-
-### Exit status
-
-| code | meaning |
-|---|---|
-| 0 | `PASSED` / `A` |
-| 1 | `FAILED` |
-| 3 | `NOT GRADED` — the assignment cannot be checked on this platform |
-| 2 | usage or configuration error |
-
-`NOT GRADED` exists because *"we cannot check this here"* is not the same as
-*"you got it wrong"*. It never unlocks anything.
-
-## Assignments
-
-42 assignments across seven strategies:
-
-| strategy | how it grades | count |
-|---|---|---|
-| `compile_and_run` | build, run with fixed argv/stdin, diff stdout | 16 |
-| `memory_check` | as above, plus a memory-safety verdict (two passes) | 8 |
-| `predict_output` | run a provided program; check your predicted output | 6 |
-| `test_identify` | your test harness must catch every broken variant | 0 (see below) |
-| `source_check` | required / forbidden declarations, then behaviour | 4 |
-| `file_compare` | your file's bytes must match | 3 |
-| `unsupported` | cannot be graded here; says why and returns 3 | 5 |
-
-Five assignments are `unsupported`: the teacher programs they test against
-(`/usr/local/l2p/...` on the original grading VM) did not survive into the
-upstream snapshot this index was reverse-engineered from.
-`REVERSE_ENGINEERING.md` §5.5 has the details.
-
-Adding an assignment means adding one config and one template. `src/` contains
-no assignment-specific knowledge — see `SCHEMA.md`.
-
----
-
-## Platform support
-
-| | status |
-|---|---|
-| **macOS** (Apple Silicon or Intel) | fully working; this is what it was developed and verified on |
-| **Linux** | expected to work — and `memory_check` uses **valgrind**, the engine the original course used, which is better than what macOS can offer |
-| **Windows** | works only with a gcc-compatible toolchain on `PATH`. MSVC's `cl` is not supported: its flags and conventions differ from the gcc this course assumes. |
-
-Two things are handled for you automatically.
-
-**Line endings.** `data/configs/expected/` fixtures, the templates and the
-flattened symlink files are all compared or interpreted as raw bytes, so an
-LF → CRLF conversion on checkout would silently break every one of them. A
-`.gitattributes` with `* -text` disables that conversion in both directions —
-do not remove it. If you author a file with Windows line endings anyway, the
-grader says so explicitly rather than printing an `Expected:`/`Got:` pair that
-looks identical:
+## 目录结构
 
 ```
-Your file did not match the expected output
-Your file uses Windows line endings (CRLF) on 1 line(s); this assignment
-expects Unix line endings (LF). Re-save it with LF endings, or run the file
-through `dos2unix`.
+data/configs/     每个作业一个 JSON，说明怎么评分
+data/templates/   每个作业开始时的样子
+data/drivers/     逆向重建的测试驱动，C 源码
+data/reference/   只有源码的标准答案
+src/              工具本身
+re/               反推过程的证据
+tools/            反推和验证脚本
+upstream/         原始的那 42 个已完成作业（不进 git，体积大）
 ```
 
-**A missing C compiler.** Most assignments compile C, so one is required.
-Rather than a raw `posix_spawn ENOENT`, the grader names the problem and the
-fix for your platform:
-
-```
-grade: no C compiler found (tried "cc").
-Most assignments compile C, so one is required.
-
-Install the Xcode command line tools:  xcode-select --install
-
-Set CC=<path> to point at a specific compiler.
-```
-
-Only `*.sh` dev tooling under `tools/` is Unix-specific; the `grade` command
-itself is TypeScript and has no shell dependency.
-
-## Platform notes (read these)
-
-This was reverse-engineered from a completed student workspace and runs on
-macOS/arm64, while the original course ran Ubuntu 20.04 / gcc 9.3.0. Three
-consequences:
-
-1. **The teacher's `.o` files cannot be used.** They are Linux x86-64 ELF.
-   Every grader driver was reconstructed as C source under `data/drivers/`.
-   `REVERSE_ENGINEERING.md` §3 explains the method; each reconstruction is
-   validated against artifacts that already existed.
-
-2. **valgrind does not exist on Apple Silicon**, and neither obvious substitute
-   is complete. `memory_check` builds each program **twice** — AddressSanitizer
-   for out-of-bounds/use-after-free/double-free, then a plain build under
-   Apple's `leaks` for leaked allocations. Measured limitations: neither
-   reports uninitialised reads (valgrind did), and `leaks` misses leaks whose
-   pointer is still on the exiting stack. So `  - Valgrind was clean …` means
-   "clean under ASan + `leaks`", not "valgrind-clean".
-
-3. **Some capstone sources are flattened git symlinks** — a file whose entire
-   content is `../c2prj1_cards/cards.c`. The build expands them automatically.
-
-## Guarantees
-
-- **Every child process has a wall-clock timeout** and is killed (SIGTERM,
-  then SIGKILL). A student's infinite loop cannot hang grading.
-- **Builds happen in a temp directory** that is always removed, so no `.o` file
-  or executable is left in the assignment folder.
-- **Comparison is byte-exact on buffers**, never on decoded strings, because
-  student C programs legitimately emit non-UTF-8 bytes.
-- **Cases run serially** — peak memory stays flat.
-- **Output capture is bounded**, so a runaway `printf` loop cannot exhaust RAM.
-- **`init` refuses to create a workspace inside the package**, and never
-  overwrites an existing assignment directory.
-- **Never fakes a pass.** Where something cannot be checked faithfully, the
-  config says `unsupported` and names the missing artifact.
-
----
-
-## Development
+## 开发
 
 ```bash
-bun test tests/          # 56 unit + end-to-end tests
-bun run check            # validate every config
-bunx tsc --noEmit        # typecheck
-bun run build            # optional: single-file binary at dist/grade
+bun test tests/          # 62 个单元和端到端测试
+bun run check            # 校验所有配置
+bunx tsc --noEmit        # 类型检查
 
-./tools/check.sh         # all of the above, plus corpus integrity
-./tools/check.sh --full  # also re-grade all 42 against the 2024 transcripts
+./tools/check.sh         # 以上全部，外加语料完整性检查
+./tools/check.sh --full  # 把 42 个作业重新评一遍，跟 2024 年的结果对比
 ./tools/demo.sh 05_squares
 ```
 
-| path | what |
-|---|---|
-| `data/configs/` | one JSON per assignment (the index) |
-| `data/templates/` | the skeleton each assignment starts from |
-| `data/drivers/` | reconstructed grader drivers, in C |
-| `data/reference/` | source-only answer key |
-| `re/` | reverse-engineering evidence: ELF reports, original transcripts |
-| `src/` | the tool |
-| `tools/` | RE and verification tooling |
-| `upstream/` | the 42 completed snapshot directories (gitignored, binary-heavy) |
+## 许可
 
-## Licence
+MIT，见 `LICENSE`。
 
-MIT — see `LICENSE`. The assignment texts and reference solutions originate
-from the Duke University Coursera course and are included for study.
+`data/` 和 `upstream/` 下的作业说明、模板和标准答案来自杜克大学的 Coursera 课程，收录于此仅供学习使用。
