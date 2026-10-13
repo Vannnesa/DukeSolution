@@ -9,3 +9,6 @@ node_modules/
 
 dist/
 *.bun-build
+
+# Built locally from squares_test.c for whichever platform you are on.
+squares_test.o
