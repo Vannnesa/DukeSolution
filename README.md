@@ -60,6 +60,7 @@ grade init [目录]     建工作区并发第一个作业
 grade status          哪些做完了、当前在哪、哪些还没解锁
 grade list            列出全部作业和各自的评分方式
 grade new <作业号>    把某个作业复制进工作区
+grade rebuild <作业号> 把某个作业重置回初始状态
 grade check           校验所有配置
 grade install         把 grade 装进 PATH
 grade uninstall       卸载

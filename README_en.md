@@ -73,6 +73,7 @@ grade init [dir]      set up a workspace and hand out the first assignment
 grade status          what's finished, what's current, what's still locked
 grade list            every assignment and how it's graded
 grade new <id>        copy one assignment into the workspace
+grade rebuild <id>    reset an assignment to its starting state
 grade check           validate the configs
 grade install         put grade on your PATH
 grade uninstall       remove it
@@ -94,6 +95,28 @@ was expected next to what you produced. Nothing is unlocked.
 
 Exit codes: `0` pass, `1` fail, `3` the assignment can't be checked on this
 machine, `2` a usage or configuration problem.
+
+### Starting over
+
+`grade rebuild` puts an assignment back the way it started. The number alone is
+enough:
+
+```
+grade rebuild 05          reset 05_squares
+grade rebuild 5           same thing, zero-padded
+grade rebuild 01_apple    the full name works too
+```
+
+Where you run it decides what happens. From the workspace root it creates or
+overwrites the folder. From inside the folder it refreshes it in place.
+
+Overwriting discards your work, so it lists which of your files would be
+replaced and which generated files would be deleted, then asks. Only `y`
+followed by Enter continues; anything else, including a bare Enter, cancels.
+When nothing has changed it does not ask.
+
+Files that are not part of the assignment, such as notes you added, are left
+alone and mentioned in the list. `--yes` skips the question.
 
 ## What gets checked
 
